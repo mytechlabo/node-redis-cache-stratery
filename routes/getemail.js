@@ -12,16 +12,19 @@ async function getEmail(req, res, next) {
   try {
     console.log("Getting email from db...");
     const userid = req.body.userid;
-    conn.query(`SELECT company FROM mail_company WHERE mail_type IN ( SELECT mail_type FROM mail WHERE email IN ( SELECT email FROM users WHERE id="${userid}" ) )
-    `, (err, rows) => {
-      if (err) {
-        res.json(err);
+    conn.query(
+      `SELECT company FROM mail_company WHERE mail_type IN ( SELECT mail_type FROM mail WHERE email IN ( SELECT email FROM users WHERE id="${userid}" ) )
+    `,
+      (err, rows) => {
+        if (err) {
+          res.json(err);
+        }
+        console.log(rows);
+        //send data to redis
+        client.setex(userid, randomInt(3600, 4200), rows[0].company);
+        res.render("repos", { email_result: rows[0].company });
       }
-      console.log(rows);
-      //send data to redis
-      client.setex(userid, randomInt(3600, 4200), rows[0].company);
-      res.render("repos", { email_result: rows[0].company });
-    });
+    );
   } catch (err) {
     console.error(err);
     res.status(500);
@@ -35,7 +38,7 @@ function cache(req, res, next) {
     if (err) throw err;
 
     if (data !== null) {
-        console.log("cache hit!!!");
+      console.log("cache hit!!!");
       res.render("repos", { email_result: data });
     } else {
       next();
